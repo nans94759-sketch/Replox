@@ -357,10 +357,10 @@ class ScreenFlowApp:
             lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
         
-        # 当 Canvas 宽度变化时，强制内部 Frame 的宽度与之对齐（这样内部组件就可以使用 fill="x"）
+        # 当 Canvas 宽度变化时，让内部 Frame 比 Canvas 窄 24 像素，留出边缘以防与右侧滚动条交错
         canvas.bind(
             "<Configure>", 
-            lambda e: canvas.itemconfig(canvas_window, width=e.width)
+            lambda e: canvas.itemconfig(canvas_window, width=e.width - 24)
         )
         
         # 绑定鼠标滚轮滚动事件（只在鼠标悬停在当前 Canvas 或其子组件上时有效）
