@@ -617,63 +617,75 @@ class ScreenFlowApp:
         settings_frame.columnconfigure(0, weight=1)
         settings_frame.columnconfigure(1, weight=3)
         
-        # 1. 基础间隔
-        tk.Label(settings_frame, text="基础检测间隔 (秒) - 聊天活跃时的轮询速度:", **lbl_cfg).grid(row=0, column=0, sticky="w", pady=5)
+        # 0. API Key
+        tk.Label(settings_frame, text="AI 模型 API Key (DashScope Bearer Token):", **lbl_cfg).grid(row=0, column=0, sticky="w", pady=5)
+        self.ent_api_key = tk.Entry(settings_frame, **ent_cfg)
+        self.ent_api_key.grid(row=0, column=1, sticky="ew", pady=5, padx=(10, 0))
+        self.ent_api_key.insert(0, str(self.config.get("api_key", "")))
+        
+        # 1. Workspace ID
+        tk.Label(settings_frame, text="AI 工作空间 ID (DashScope Workspace ID, 可选):", **lbl_cfg).grid(row=1, column=0, sticky="w", pady=5)
+        self.ent_workspace_id = tk.Entry(settings_frame, **ent_cfg)
+        self.ent_workspace_id.grid(row=1, column=1, sticky="ew", pady=5, padx=(10, 0))
+        self.ent_workspace_id.insert(0, str(self.config.get("workspace_id", "")))
+        
+        # 2. 基础间隔
+        tk.Label(settings_frame, text="基础检测间隔 (秒) - 聊天活跃时的轮询速度:", **lbl_cfg).grid(row=2, column=0, sticky="w", pady=5)
         self.ent_base_int = tk.Entry(settings_frame, **ent_cfg)
-        self.ent_base_int.grid(row=0, column=1, sticky="ew", pady=5, padx=(10, 0))
+        self.ent_base_int.grid(row=2, column=1, sticky="ew", pady=5, padx=(10, 0))
         self.ent_base_int.insert(0, str(self.config.get("base_interval", 5.0)))
         
-        # 2. 最大间隔
-        tk.Label(settings_frame, text="最大检测间隔 (秒) - 长期闲置时的最大频率:", **lbl_cfg).grid(row=1, column=0, sticky="w", pady=5)
+        # 3. 最大间隔
+        tk.Label(settings_frame, text="最大检测间隔 (秒) - 长期闲置时的最大频率:", **lbl_cfg).grid(row=3, column=0, sticky="w", pady=5)
         self.ent_max_int = tk.Entry(settings_frame, **ent_cfg)
-        self.ent_max_int.grid(row=1, column=1, sticky="ew", pady=5, padx=(10, 0))
+        self.ent_max_int.grid(row=3, column=1, sticky="ew", pady=5, padx=(10, 0))
         self.ent_max_int.insert(0, str(self.config.get("max_interval", 60.0)))
         
-        # 3. 退避倍率
-        tk.Label(settings_frame, text="闲置退避系数 - 没消息时每次延时累乘倍数:", **lbl_cfg).grid(row=2, column=0, sticky="w", pady=5)
+        # 4. 退避倍率
+        tk.Label(settings_frame, text="闲置退避系数 - 没消息时每次延时累乘倍数:", **lbl_cfg).grid(row=4, column=0, sticky="w", pady=5)
         self.ent_multiplier = tk.Entry(settings_frame, **ent_cfg)
-        self.ent_multiplier.grid(row=2, column=1, sticky="ew", pady=5, padx=(10, 0))
+        self.ent_multiplier.grid(row=4, column=1, sticky="ew", pady=5, padx=(10, 0))
         self.ent_multiplier.insert(0, str(self.config.get("backoff_multiplier", 1.5)))
         
-        # 4. 变化阈值
-        tk.Label(settings_frame, text="通知标记检测敏感度 - 最小像素集范围点数:", **lbl_cfg).grid(row=3, column=0, sticky="w", pady=5)
+        # 5. 变化阈值
+        tk.Label(settings_frame, text="通知标记检测敏感度 - 最小像素集范围点数:", **lbl_cfg).grid(row=5, column=0, sticky="w", pady=5)
         self.ent_threshold = tk.Entry(settings_frame, **ent_cfg)
-        self.ent_threshold.grid(row=3, column=1, sticky="ew", pady=5, padx=(10, 0))
+        self.ent_threshold.grid(row=5, column=1, sticky="ew", pady=5, padx=(10, 0))
         self.ent_threshold.insert(0, str(self.config.get("change_threshold", 0.005)))
         
-        # 5. 回复过滤模式
-        tk.Label(settings_frame, text="智能接管过滤模式:", **lbl_cfg).grid(row=4, column=0, sticky="w", pady=8)
+        # 6. 回复过滤模式
+        tk.Label(settings_frame, text="智能接管过滤模式:", **lbl_cfg).grid(row=6, column=0, sticky="w", pady=8)
         
         self.filter_mode_var = tk.StringVar(value=self.config.get("filter_mode", "all"))
         radio_frame = tk.Frame(settings_frame, bg="#1e1e1e")
-        radio_frame.grid(row=4, column=1, sticky="w", pady=8, padx=(10, 0))
+        radio_frame.grid(row=6, column=1, sticky="w", pady=8, padx=(10, 0))
         
         tk.Radiobutton(radio_frame, text="全部自动接管回复", variable=self.filter_mode_var, value="all", fg="#00ff00", bg="#1e1e1e", activeforeground="#00ff00", selectcolor="#2d2d2d").pack(side="left", padx=5)
         tk.Radiobutton(radio_frame, text="只回复名单中项目", variable=self.filter_mode_var, value="whitelist", fg="#007aff", bg="#1e1e1e", activeforeground="#007aff", selectcolor="#2d2d2d").pack(side="left", padx=5)
         tk.Radiobutton(radio_frame, text="排除名单中项目", variable=self.filter_mode_var, value="blacklist", fg="#ff3b30", bg="#1e1e1e", activeforeground="#ff3b30", selectcolor="#2d2d2d").pack(side="left", padx=5)
         
-        # 6. 名单框
-        tk.Label(settings_frame, text="过滤名单中的关键词 (空格或逗号分隔):", **lbl_cfg).grid(row=5, column=0, sticky="w", pady=5)
+        # 7. 名单框
+        tk.Label(settings_frame, text="过滤名单中的关键词 (空格或逗号分隔):", **lbl_cfg).grid(row=7, column=0, sticky="w", pady=5)
         self.ent_filter_names = tk.Entry(settings_frame, **ent_cfg)
-        self.ent_filter_names.grid(row=5, column=1, sticky="ew", pady=5, padx=(10, 0))
+        self.ent_filter_names.grid(row=7, column=1, sticky="ew", pady=5, padx=(10, 0))
         self.ent_filter_names.insert(0, self.config.get("filter_keywords", ""))
         
-        # 7. 目标应用名称
-        tk.Label(settings_frame, text="目标应用窗口标题/名称 (如 WeChat, Slack, 钉钉，留空不限制):", **lbl_cfg).grid(row=6, column=0, sticky="w", pady=5)
+        # 8. 目标应用名称
+        tk.Label(settings_frame, text="目标应用窗口标题/名称 (如 WeChat, Slack, 钉钉，留空不限制):", **lbl_cfg).grid(row=8, column=0, sticky="w", pady=5)
         self.ent_target_app = tk.Entry(settings_frame, **ent_cfg)
-        self.ent_target_app.grid(row=6, column=1, sticky="ew", pady=5, padx=(10, 0))
+        self.ent_target_app.grid(row=8, column=1, sticky="ew", pady=5, padx=(10, 0))
         self.ent_target_app.insert(0, self.config.get("target_app_name", ""))
         
-        # 8. AI 系统 Prompt
-        tk.Label(settings_frame, text="AI 扮演角色与回复规则 Prompt:", **lbl_cfg).grid(row=7, column=0, sticky="nw", pady=(10, 5))
+        # 9. AI 系统 Prompt
+        tk.Label(settings_frame, text="AI 扮演角色与回复规则 Prompt:", **lbl_cfg).grid(row=9, column=0, sticky="nw", pady=(10, 5))
         self.txt_prompt = tk.Text(
             settings_frame, bg="#151515", fg="#ffffff", insertbackground="white",
             font=("PingFang SC", 10), bd=1, relief="solid", height=5
         )
-        self.txt_prompt.grid(row=7, column=1, sticky="nsew", pady=(10, 5), padx=(10, 0))
+        self.txt_prompt.grid(row=9, column=1, sticky="nsew", pady=(10, 5), padx=(10, 0))
         self.txt_prompt.insert("1.0", self.config.get("system_prompt", ""))
         
-        settings_frame.rowconfigure(7, weight=1)
+        settings_frame.rowconfigure(9, weight=1)
         
         # 保存按钮
         self.btn_save_settings = tk.Label(
@@ -686,6 +698,8 @@ class ScreenFlowApp:
     def save_settings_action(self):
         """保存高级参数"""
         try:
+            api_key = self.ent_api_key.get().strip()
+            workspace_id = self.ent_workspace_id.get().strip()
             base_int = float(self.ent_base_int.get())
             max_int = float(self.ent_max_int.get())
             multiplier = float(self.ent_multiplier.get())
@@ -698,6 +712,8 @@ class ScreenFlowApp:
             if base_int <= 0 or max_int <= 0 or multiplier <= 1.0 or threshold <= 0:
                 raise ValueError("数值格式或区间非法")
                 
+            self.config["api_key"] = api_key
+            self.config["workspace_id"] = workspace_id
             self.config["base_interval"] = base_int
             self.config["max_interval"] = max_int
             self.config["backoff_multiplier"] = multiplier
@@ -790,8 +806,8 @@ class ScreenFlowApp:
         body.pack(fill="both", expand=True, padx=15)
         body.columnconfigure(0, weight=1)
         body.columnconfigure(1, weight=1)
-        body.rowconfigure(1, weight=1)
-        body.rowconfigure(3, weight=1)
+        body.rowconfigure(2, weight=2)
+        body.rowconfigure(4, weight=1)
         
         # ---- 左上/右上：预设模板快捷选择 ----
         preset_frame = tk.Frame(body, bg="#2d2d2d", bd=1, relief="solid")
