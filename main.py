@@ -591,10 +591,9 @@ class ScreenFlowApp:
         )
         title_lbl.pack(fill="x", padx=15, pady=(10, 5))
         
-        # 使用滚动容器包裹高级参数面板
-        scroll_container = tk.Frame(self.tab_settings, bg="#1e1e1e")
-        scroll_container.pack(fill="both", expand=True, padx=15)
-        main_container = self.create_scrollable_container(scroll_container)
+        # 主框架容器
+        main_container = tk.Frame(self.tab_settings, bg="#1e1e1e")
+        main_container.pack(fill="both", expand=True, padx=15)
         
         lbl_cfg = {"font": ("PingFang SC", 10, "bold"), "fg": "#ffffff", "bg": "#1e1e1e", "anchor": "w"}
         ent_cfg = {"bg": "#151515", "fg": "#00ff00", "insertbackground": "white", "font": ("Menlo", 10), "bd": 1, "relief": "solid"}
@@ -686,11 +685,18 @@ class ScreenFlowApp:
         
         # AI 系统 Prompt
         tk.Label(sec3, text="AI 扮演角色与回复规则 Prompt:", **lbl_cfg).grid(row=2, column=0, sticky="nw", pady=4, padx=10)
+        
+        prompt_container = tk.Frame(sec3, bg="#1e1e1e")
+        prompt_container.grid(row=2, column=1, sticky="nsew", pady=4, padx=(0, 10))
+        
         self.txt_prompt = tk.Text(
-            sec3, bg="#151515", fg="#ffffff", insertbackground="white",
+            prompt_container, bg="#151515", fg="#ffffff", insertbackground="white",
             font=("PingFang SC", 10), bd=1, relief="solid", height=3
         )
-        self.txt_prompt.grid(row=2, column=1, sticky="nsew", pady=4, padx=(0, 10))
+        pr_scroll = ttk.Scrollbar(prompt_container, orient="vertical", command=self.txt_prompt.yview)
+        self.txt_prompt.configure(yscrollcommand=pr_scroll.set)
+        pr_scroll.pack(side="right", fill="y")
+        self.txt_prompt.pack(side="left", fill="both", expand=True)
         self.txt_prompt.insert("1.0", self.config.get("system_prompt", ""))
         
         # 保存按钮
@@ -782,14 +788,13 @@ class ScreenFlowApp:
         )
         title_lbl.pack(fill="x", padx=15, pady=(10, 5))
         
-        # 使用滚动容器包裹人设与知识库面板
-        scroll_container = tk.Frame(self.tab_persona, bg="#1e1e1e")
-        scroll_container.pack(fill="both", expand=True, padx=15)
-        body = self.create_scrollable_container(scroll_container)
+        # 主体容器
+        body = tk.Frame(self.tab_persona, bg="#1e1e1e")
+        body.pack(fill="both", expand=True, padx=15)
         body.columnconfigure(0, weight=1)
         body.columnconfigure(1, weight=1)
-        body.rowconfigure(2, weight=2)
-        body.rowconfigure(4, weight=1)
+        body.rowconfigure(2, weight=3) # 给输入框这一行高权重
+        body.rowconfigure(4, weight=2) # 给预览框这一行中等权重
         
         # ---- 左上/右上：预设模板快捷选择 ----
         preset_frame = tk.Frame(body, bg="#2d2d2d", bd=1, relief="solid")
@@ -806,33 +811,43 @@ class ScreenFlowApp:
             self.set_button_state(btn_preset, name, "#3a3a3a", lambda n=name: self.apply_persona_preset(n))
         
         # ---- 左列：角色人设 ----
-        tk.Label(body, text="🎭 角色人设（性格 · 语气 · 身份背景）:", **lbl_cfg).grid(row=0 + 1, column=0, sticky="sw", pady=(8, 2), padx=(0, 5))
+        tk.Label(body, text="🎭 角色人设（性格 · 语气 · 身份背景）:", **lbl_cfg).grid(row=1, column=0, sticky="sw", pady=(8, 2), padx=(0, 5))
         
+        p_frame = tk.Frame(body, bg="#1e1e1e")
+        p_frame.grid(row=2, column=0, sticky="nsew", pady=(0, 8), padx=(0, 5))
         self.txt_persona = tk.Text(
-            body, bg="#151515", fg="#e0e0ff", insertbackground="white",
-            font=("PingFang SC", 10), bd=1, relief="solid", wrap="word", height=8
+            p_frame, bg="#151515", fg="#e0e0ff", insertbackground="white",
+            font=("PingFang SC", 10), bd=1, relief="solid", wrap="word", height=6
         )
-        self.txt_persona.grid(row=1 + 1, column=0, sticky="nsew", pady=(0, 8), padx=(0, 5))
+        p_scroll = ttk.Scrollbar(p_frame, orient="vertical", command=self.txt_persona.yview)
+        self.txt_persona.configure(yscrollcommand=p_scroll.set)
+        p_scroll.pack(side="right", fill="y")
+        self.txt_persona.pack(side="left", fill="both", expand=True)
         self.txt_persona.insert("1.0", self.config.get("persona", ""))
         
         # 人设字数统计
         self.lbl_persona_count = tk.Label(body, text="0 字", font=("Menlo", 9), fg="#666666", bg="#1e1e1e", anchor="e")
-        self.lbl_persona_count.grid(row=2 + 1, column=0, sticky="e", padx=(0, 5))
+        self.lbl_persona_count.grid(row=3, column=0, sticky="e", padx=(0, 5))
         self.txt_persona.bind("<KeyRelease>", lambda e: self._update_char_counts())
         
         # ---- 右列：知识库 ----
-        tk.Label(body, text="📚 知识库（FAQ · 产品信息 · 专业知识）:", **lbl_cfg).grid(row=0 + 1, column=1, sticky="sw", pady=(8, 2), padx=(5, 0))
+        tk.Label(body, text="📚 知识库（FAQ · 产品信息 · 专业知识）:", **lbl_cfg).grid(row=1, column=1, sticky="sw", pady=(8, 2), padx=(5, 0))
         
+        k_frame = tk.Frame(body, bg="#1e1e1e")
+        k_frame.grid(row=2, column=1, sticky="nsew", pady=(0, 8), padx=(5, 0))
         self.txt_knowledge = tk.Text(
-            body, bg="#151515", fg="#e0ffe0", insertbackground="white",
-            font=("PingFang SC", 10), bd=1, relief="solid", wrap="word", height=8
+            k_frame, bg="#151515", fg="#e0ffe0", insertbackground="white",
+            font=("PingFang SC", 10), bd=1, relief="solid", wrap="word", height=6
         )
-        self.txt_knowledge.grid(row=1 + 1, column=1, sticky="nsew", pady=(0, 8), padx=(5, 0))
+        k_scroll = ttk.Scrollbar(k_frame, orient="vertical", command=self.txt_knowledge.yview)
+        self.txt_knowledge.configure(yscrollcommand=k_scroll.set)
+        k_scroll.pack(side="right", fill="y")
+        self.txt_knowledge.pack(side="left", fill="both", expand=True)
         self.txt_knowledge.insert("1.0", self.config.get("knowledge_base", ""))
         
         # 知识库字数统计
         self.lbl_kb_count = tk.Label(body, text="0 字", font=("Menlo", 9), fg="#666666", bg="#1e1e1e", anchor="e")
-        self.lbl_kb_count.grid(row=2 + 1, column=1, sticky="e", padx=(5, 0))
+        self.lbl_kb_count.grid(row=3, column=1, sticky="e", padx=(5, 0))
         self.txt_knowledge.bind("<KeyRelease>", lambda e: self._update_char_counts())
         
         # ---- 底部：实时预览 + 保存 ----
@@ -845,9 +860,12 @@ class ScreenFlowApp:
         
         self.txt_preview = tk.Text(
             preview_frame, bg="#0a0a0a", fg="#aaaaaa", insertbackground="white",
-            font=("Menlo", 9), bd=0, relief="flat", wrap="word", height=4, state="disabled"
+            font=("Menlo", 9), bd=0, relief="flat", wrap="word", height=3, state="disabled"
         )
-        self.txt_preview.pack(fill="both", expand=True, padx=5, pady=5)
+        pr_scroll = ttk.Scrollbar(preview_frame, orient="vertical", command=self.txt_preview.yview)
+        self.txt_preview.configure(yscrollcommand=pr_scroll.set)
+        pr_scroll.pack(side="right", fill="y")
+        self.txt_preview.pack(side="left", fill="both", expand=True)
         
         # 保存按钮
         btn_save = tk.Label(
