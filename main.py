@@ -277,7 +277,7 @@ class ScreenFlowApp:
                 logger.error(f"加载 app_icon.png 失败: {e}")
 
         # 设置窗口属性
-        self.root.title("ScreenFlow AI — 聊天助手")
+        self.root.title("ChatPilot 妙答 — AI 聊天回复助手")
         self.root.geometry("820x650")
         self.root.configure(bg="#1e1e1e")
         
@@ -1034,7 +1034,7 @@ class ScreenFlowApp:
         self.info_text.config(state="normal")
         self.info_text.delete("1.0", tk.END)
         
-        self.info_text.insert(tk.END, "ScreenFlow AI 自动化参数概览：\n", "title")
+        self.info_text.insert(tk.END, "ChatPilot 妙答 参数概览：\n", "title")
         self.info_text.insert(tk.END, "--------------------------------------------------\n")
         
         # 过滤模式
@@ -1616,7 +1616,7 @@ class ScreenFlowApp:
 
     def on_close(self):
         """关闭程序时，干净释放线程"""
-        if messagebox.askyesno("确认退出", "确定退出 ScreenFlow AI 吗？", parent=self.root):
+        if messagebox.askyesno("确认退出", "确定退出 ChatPilot 妙答 吗？", parent=self.root):
             self.thread_active = False
             try:
                 self.root.withdraw()
@@ -1630,7 +1630,7 @@ class ScreenFlowApp:
             sys.exit(0)
 
 def main():
-    parser = argparse.ArgumentParser(description="ScreenFlow AI 聊天助手控制台")
+    parser = argparse.ArgumentParser(description="ChatPilot 妙答 — AI 聊天回复助手")
     parser.add_argument("--auto-reply", action="store_true", help="启动时直接自动回复而非安全模式")
     args = parser.parse_args()
     
