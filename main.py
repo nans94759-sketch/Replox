@@ -277,7 +277,7 @@ class ScreenFlowApp:
                 logger.error(f"加载 app_icon.png 失败: {e}")
 
         # 设置窗口属性
-        self.root.title("ScreenFlow AI — 屏幕感知自动化助手")
+        self.root.title("ScreenFlow AI — 聊天助手")
         self.root.geometry("820x650")
         self.root.configure(bg="#1e1e1e")
         
@@ -1630,7 +1630,7 @@ class ScreenFlowApp:
             sys.exit(0)
 
 def main():
-    parser = argparse.ArgumentParser(description="ScreenFlow AI 屏幕感知自动化控制台")
+    parser = argparse.ArgumentParser(description="ScreenFlow AI 聊天助手控制台")
     parser.add_argument("--auto-reply", action="store_true", help="启动时直接自动回复而非安全模式")
     args = parser.parse_args()
     
