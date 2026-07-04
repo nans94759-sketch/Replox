@@ -1015,6 +1015,101 @@ class ScreenFlowApp:
         else:
             self.lbl_status_input.config(text="步骤 3: 【输入框区域】 (当前状态: ❌ 未配置)", fg="#ffffff")
 
+    def update_info_display(self):
+        """刷新展示面板"""
+        self.info_text.config(state="normal")
+        self.info_text.delete("1.0", tk.END)
+        
+        self.info_text.insert(tk.END, "ScreenFlow AI 自动化参数概览：\n", "title")
+        self.info_text.insert(tk.END, "--------------------------------------------------\n")
+        
+        # 过滤模式
+        f_mode = self.config.get("filter_mode", "all")
+        mode_str = "全部自动接管"
+        if f_mode == "whitelist":
+            mode_str = "只处理指定名单项目"
+        elif f_mode == "blacklist":
+            mode_str = "排除指定名单项目"
+            
+        self.info_text.insert(tk.END, f"🛡️ 过滤模式: 【{mode_str}】\n", "section")
+        self.info_text.insert(tk.END, f"👥 过滤名单关键词: {self.config.get('filter_keywords', '无')}\n")
+        self.info_text.insert(tk.END, f"📱 目标应用窗口: {self.config.get('target_app_name', '不限')}\n\n")
+        
+        # 区域坐标
+        self.info_text.insert(tk.END, "📐 系统核心选区坐标：\n", "section")
+        self.info_text.insert(tk.END, f"   🔸 导航列表栏: {self.config.get('navigation_region', '❌ 暂未配置')}\n")
+        self.info_text.insert(tk.END, f"   🔸 内容展示区: {self.config.get('content_region', '❌ 暂未配置')}\n")
+        self.info_text.insert(tk.END, f"   🔸 文字输入框: {self.config.get('input_region', '❌ 暂未配置')}\n\n")
+        
+        # 参数
+        self.info_text.insert(tk.END, "🤖 运行轮询参数：\n", "section")
+        self.info_text.insert(tk.END, f"   💡 基础轮询频率: {self.config.get('base_interval', 5.0)} 秒\n")
+        self.info_text.insert(tk.END, f"   ⏳ 最大轮询上限: {self.config.get('max_interval', 60.0)} 秒\n")
+        self.info_text.insert(tk.END, f"   🧪 运行确认模式: {'🛡️ 安全审核模式 (人工确认)' if self.safety_mode else '🟢 自动发送模式 (无人值守)'}\n")
+        
+        self.info_text.tag_config("title", font=("PingFang SC", 12, "bold"), foreground="#00ff00")
+        self.info_text.tag_config("section", font=("PingFang SC", 11, "bold"), foreground="#ffffff")
+        self.info_text.config(state="disabled")
+
+    def start_region_calibration(self, mode):
+        """开始倒计时引导并执行框选"""
+        if getattr(self, "calibrating", False):
+            return
+        self.calibrating = True
+        
+        instruction = "框选区域"
+        mode_desc = ""
+        if mode == "smart":
+            instruction = "请用鼠标按住左键拖拽，框选整个【目标窗口外框】"
+            mode_desc = "智能一键配置（框选整个目标窗口外框）"
+        elif mode == "navigation":
+            instruction = "请用鼠标按住左键拖拽，框选【整个导航列表区域】"
+            mode_desc = "分步配置 - 步骤 1：导航列表区域"
+        elif mode == "content":
+            instruction = "请用鼠标按住左键拖拽，框选【内容展示区域】"
+            mode_desc = "分步配置 - 步骤 2：内容展示区域"
+        elif mode == "input":
+            instruction = "请用鼠标按住左键拖拽，框选【输入框区域】"
+            mode_desc = "分步配置 - 步骤 3：输入框区域"
+            
+        # 唤起醒目的居中倒计时弹窗
+        dialog = CountdownDialog(self.root, 3, mode_desc)
+        self.lbl_wizard_tip.config(text="⏱️ 倒计时准备中，请准备好窗口...", fg="#ff3b30")
+        self.root.wait_window(dialog)
+        
+        # 倒计时结束，立即执行截图
+        self.lbl_wizard_tip.config(text="📸 正在捕捉屏幕背景截图...", fg="#00ff00")
+        self.root.update()
+        time.sleep(0.3)
+        
+        import region_selector
+        region = region_selector.select_region(instruction, self.root)
+        self.lbl_wizard_tip.config(text="💡 经典比例：侧边栏 8%，导航列表 27%，内容区 65%，打字框 20% 高度。", fg="#ff9500", font=("PingFang SC", 10))
+        
+        self.calibrating = False # 释放锁
+        
+        if not region:
+            logger.warn("选区配置已被取消")
+            self.auto_start_if_configured()
+            return
+            
+        self.handle_calibration_result(mode, region)
+
+    def auto_start_if_configured(self):
+        """配齐坐标后自动开启"""
+        has_nav = self.config.get("navigation_region")
+        has_content = self.config.get("content_region")
+        has_input = self.config.get("input_region")
+        
+        if has_nav and has_content and has_input:
+            self.lbl_status.config(text="监控状态: 🟢 运行中 (正在监听)", fg="#00ff00")
+            self.set_button_state(self.btn_run, "⏸️ 暂停自动监控", "#f5a623")
+            self.is_monitoring = True
+        else:
+            self.lbl_status.config(text="监控状态: 🔴 选区未配齐，请先配置", fg="#ff3b30")
+            self.set_button_state(self.btn_run, "🚀 开启自动监控", "#27ae60")
+            self.is_monitoring = False
+
     def show_regions_visualization(self):
         """
         在屏幕上以半透明有色图层形式高亮显示当前配置的三个核心选区，

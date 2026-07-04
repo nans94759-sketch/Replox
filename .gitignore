@@ -115,6 +115,7 @@ Thumbs.db
 # Project local configs
 config.json
 debug_list_col.png
+api_credentials.txt
 
 # Application Logs
 logs/
