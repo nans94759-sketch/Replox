@@ -277,7 +277,7 @@ class ScreenFlowApp:
                 logger.error(f"加载 app_icon.png 失败: {e}")
 
         # 设置窗口属性
-        self.root.title("Replox — AI 聊天回复助手")
+        self.root.title("Replox 妙答AI聊天回复助手")
         self.root.geometry("820x650")
         self.root.configure(bg="#1e1e1e")
         
@@ -1630,7 +1630,7 @@ class ScreenFlowApp:
             sys.exit(0)
 
 def main():
-    parser = argparse.ArgumentParser(description="Replox — AI 聊天回复助手")
+    parser = argparse.ArgumentParser(description="Replox 妙答AI聊天回复助手")
     parser.add_argument("--auto-reply", action="store_true", help="启动时直接自动回复而非安全模式")
     args = parser.parse_args()
     
