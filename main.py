@@ -768,7 +768,7 @@ class ScreenFlowApp:
         
         self.txt_persona = tk.Text(
             body, bg="#151515", fg="#e0e0ff", insertbackground="white",
-            font=("PingFang SC", 10), bd=1, relief="solid", wrap="word"
+            font=("PingFang SC", 10), bd=1, relief="solid", wrap="word", height=8
         )
         self.txt_persona.grid(row=1 + 1, column=0, sticky="nsew", pady=(0, 8), padx=(0, 5))
         self.txt_persona.insert("1.0", self.config.get("persona", ""))
@@ -783,7 +783,7 @@ class ScreenFlowApp:
         
         self.txt_knowledge = tk.Text(
             body, bg="#151515", fg="#e0ffe0", insertbackground="white",
-            font=("PingFang SC", 10), bd=1, relief="solid", wrap="word"
+            font=("PingFang SC", 10), bd=1, relief="solid", wrap="word", height=8
         )
         self.txt_knowledge.grid(row=1 + 1, column=1, sticky="nsew", pady=(0, 8), padx=(5, 0))
         self.txt_knowledge.insert("1.0", self.config.get("knowledge_base", ""))
@@ -800,20 +800,19 @@ class ScreenFlowApp:
             bd=1, relief="solid", labelanchor="nw"
         )
         preview_frame.grid(row=4, column=0, columnspan=2, sticky="nsew", pady=(5, 0))
-        body.rowconfigure(4, weight=1)
         
         self.txt_preview = tk.Text(
             preview_frame, bg="#0a0a0a", fg="#aaaaaa", insertbackground="white",
-            font=("Menlo", 9), bd=0, relief="flat", wrap="word", height=5, state="disabled"
+            font=("Menlo", 9), bd=0, relief="flat", wrap="word", height=4, state="disabled"
         )
         self.txt_preview.pack(fill="both", expand=True, padx=5, pady=5)
         
         # 保存按钮
         btn_save = tk.Label(
-            self.tab_persona, font=("PingFang SC", 11, "bold"),
+            body, font=("PingFang SC", 11, "bold"),
             fg="white", bd=0, height=2, cursor="hand2"
         )
-        btn_save.pack(fill="x", padx=15, pady=(8, 15))
+        btn_save.grid(row=5, column=0, columnspan=2, sticky="ew", pady=(8, 10))
         self.set_button_state(btn_save, "💾 保存人设与知识库", "#af52de", self.save_persona_action)
         
         # 初始化字数和预览
