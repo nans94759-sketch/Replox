@@ -38,7 +38,7 @@ DEFAULT_CONFIG = {
     "content_region": None,
     "input_region": None,
     
-    # 目标应用名称（如 WeChat, Slack, 钉钉 等，留空则不检测前台）
+    # 目标应用名称（如聊天软件等，留空则不检测前台）
     "target_app_name": "",
     
     # 通知标记颜色检测阈值 (RGB)
