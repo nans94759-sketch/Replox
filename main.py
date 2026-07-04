@@ -335,6 +335,44 @@ class ScreenFlowApp:
         style.map("TNotebook.Tab", background=[("selected", "#1e1e1e")], foreground=[("selected", "#00ff00")])
         style.configure("TSeparator", background="#333333")
 
+    def create_scrollable_container(self, parent_frame):
+        """
+        创建一个通用的、可滚动的 Canvas + Scrollbar 容器，并返回内部的可放置组件的 Frame
+        """
+        canvas = tk.Canvas(parent_frame, bg="#1e1e1e", highlightthickness=0)
+        scrollbar = ttk.Scrollbar(parent_frame, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # 布局 Canvas 和 Scrollbar
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+        
+        # 创建内部的真实容器 Frame
+        scroll_content_frame = tk.Frame(canvas, bg="#1e1e1e")
+        canvas_window = canvas.create_window((0, 0), window=scroll_content_frame, anchor="nw")
+        
+        # 当内部 Frame 尺寸改变时，更新 Canvas 的滚动范围
+        scroll_content_frame.bind(
+            "<Configure>", 
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        # 当 Canvas 宽度变化时，强制内部 Frame 的宽度与之对齐（这样内部组件就可以使用 fill="x"）
+        canvas.bind(
+            "<Configure>", 
+            lambda e: canvas.itemconfig(canvas_window, width=e.width)
+        )
+        
+        # 绑定鼠标滚轮滚动事件（只在鼠标悬停在当前 Canvas 或其子组件上时有效）
+        def _on_mousewheel(event):
+            widget = event.widget
+            if widget and str(widget).startswith(str(canvas)):
+                canvas.yview_scroll(-1 * int(event.delta), "units")
+                
+        self.root.bind_all("<MouseWheel>", _on_mousewheel, add="+")
+        
+        return scroll_content_frame
+
     def set_button_state(self, btn, text, bg, command=None):
         """
         用于设置 flat 标签按钮的状态并赋予 hover 动态高亮动效
@@ -465,8 +503,10 @@ class ScreenFlowApp:
         )
         guide_label.pack(fill="x", padx=15, pady=10)
         
-        scroll_frame = tk.Frame(self.tab_config, bg="#1e1e1e")
-        scroll_frame.pack(fill="both", expand=True, padx=15)
+        # 使用滚动容器包裹配置项
+        scroll_container = tk.Frame(self.tab_config, bg="#1e1e1e")
+        scroll_container.pack(fill="both", expand=True, padx=15)
+        scroll_frame = self.create_scrollable_container(scroll_container)
         
         card_config = {"bg": "#2d2d2d", "bd": 1, "relief": "groove"}
         
@@ -528,14 +568,14 @@ class ScreenFlowApp:
                   
         # 下方提示区域
         self.lbl_wizard_tip = tk.Label(
-            self.tab_config, 
+            scroll_frame, 
             text="💡 经典比例：侧边栏 8%，导航列表 27%，内容区 65%，打字框 20% 高度。",
             font=("PingFang SC", 10), fg="#ff9500", bg="#1e1e1e", justify="center"
         )
         self.lbl_wizard_tip.pack(fill="x", pady=5)
         
         self.btn_preview_regions = tk.Label(
-            self.tab_config, font=("PingFang SC", 11, "bold"), fg="white", bd=0, height=2, cursor="hand2"
+            scroll_frame, font=("PingFang SC", 11, "bold"), fg="white", bd=0, height=2, cursor="hand2"
         )
         self.btn_preview_regions.pack(fill="x", padx=15, pady=5)
         self.set_button_state(self.btn_preview_regions, "👁️ 屏幕高亮预览校验当前选区", "#e67e22", self.show_regions_visualization)
@@ -551,9 +591,10 @@ class ScreenFlowApp:
         )
         title_lbl.pack(fill="x", padx=15, pady=(10, 5))
         
-        # 主框架容器
-        main_container = tk.Frame(self.tab_settings, bg="#1e1e1e")
-        main_container.pack(fill="both", expand=True, padx=15)
+        # 使用滚动容器包裹高级参数面板
+        scroll_container = tk.Frame(self.tab_settings, bg="#1e1e1e")
+        scroll_container.pack(fill="both", expand=True, padx=15)
+        main_container = self.create_scrollable_container(scroll_container)
         
         lbl_cfg = {"font": ("PingFang SC", 10, "bold"), "fg": "#ffffff", "bg": "#1e1e1e", "anchor": "w"}
         ent_cfg = {"bg": "#151515", "fg": "#00ff00", "insertbackground": "white", "font": ("Menlo", 10), "bd": 1, "relief": "solid"}
@@ -741,9 +782,10 @@ class ScreenFlowApp:
         )
         title_lbl.pack(fill="x", padx=15, pady=(10, 5))
         
-        # 主体容器
-        body = tk.Frame(self.tab_persona, bg="#1e1e1e")
-        body.pack(fill="both", expand=True, padx=15)
+        # 使用滚动容器包裹人设与知识库面板
+        scroll_container = tk.Frame(self.tab_persona, bg="#1e1e1e")
+        scroll_container.pack(fill="both", expand=True, padx=15)
+        body = self.create_scrollable_container(scroll_container)
         body.columnconfigure(0, weight=1)
         body.columnconfigure(1, weight=1)
         body.rowconfigure(2, weight=2)
