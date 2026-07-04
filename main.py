@@ -470,62 +470,6 @@ class ScreenFlowApp:
         
         card_config = {"bg": "#2d2d2d", "bd": 1, "relief": "groove"}
         
-        # ---------------- 👥 自动回复过滤设置 (黑/白名单) ----------------
-        filter_box = tk.LabelFrame(
-            scroll_frame, text=" 👥 自动回复过滤设置 ", 
-            font=("PingFang SC", 11, "bold"), fg="#ff9500", bg="#1e1e1e", bd=1
-        )
-        filter_box.pack(fill="x", pady=(0, 15), ipady=8)
-        
-        # 模式选择
-        mode_frame = tk.Frame(filter_box, bg="#1e1e1e")
-        mode_frame.pack(fill="x", padx=15, pady=5)
-        
-        tk.Label(
-            mode_frame, text="选择回复接管策略:", 
-            font=("PingFang SC", 10, "bold"), fg="#ffffff", bg="#1e1e1e"
-        ).pack(side="left", padx=(0, 15))
-        
-        self.tab_filter_mode_var = tk.StringVar(value=self.config.get("filter_mode", "all"))
-        
-        r1 = tk.Radiobutton(
-            mode_frame, text="🟢 全部人都回复", variable=self.tab_filter_mode_var, value="all",
-            fg="#00ff00", bg="#1e1e1e", activeforeground="#00ff00", selectcolor="#2d2d2d",
-            font=("PingFang SC", 10), command=self.sync_filter_mode_to_config
-        )
-        r1.pack(side="left", padx=10)
-        
-        r2 = tk.Radiobutton(
-            mode_frame, text="🔵 只针对某些人回复", variable=self.tab_filter_mode_var, value="whitelist",
-            fg="#007aff", bg="#1e1e1e", activeforeground="#007aff", selectcolor="#2d2d2d",
-            font=("PingFang SC", 10), command=self.sync_filter_mode_to_config
-        )
-        r2.pack(side="left", padx=10)
-        
-        r3 = tk.Radiobutton(
-            mode_frame, text="🔴 排除某些人 (黑名单)", variable=self.tab_filter_mode_var, value="blacklist",
-            fg="#ff3b30", bg="#1e1e1e", activeforeground="#ff3b30", selectcolor="#2d2d2d",
-            font=("PingFang SC", 10), command=self.sync_filter_mode_to_config
-        )
-        r3.pack(side="left", padx=10)
-        
-        # 名单输入
-        names_frame = tk.Frame(filter_box, bg="#1e1e1e")
-        names_frame.pack(fill="x", padx=15, pady=5)
-        
-        tk.Label(
-            names_frame, text="过滤名单中的关键词 (用空格或逗号分隔多个):", 
-            font=("PingFang SC", 10), fg="#ffffff", bg="#1e1e1e"
-        ).pack(anchor="w")
-        
-        self.ent_names = tk.Entry(
-            names_frame, bg="#151515", fg="#ffffff", insertbackground="white",
-            font=("PingFang SC", 11), bd=1, relief="solid", highlightthickness=0
-        )
-        self.ent_names.pack(fill="x", pady=5)
-        self.ent_names.insert(0, self.config.get("filter_keywords", ""))
-        self.ent_names.bind("<KeyRelease>", self.sync_filter_names_to_config)
-        
         # ---------------- 🌟 智能一键配置 ----------------
         smart_box = tk.LabelFrame(
             scroll_frame, text=" 🌟 智能一键配置 (推荐) ", 
@@ -605,94 +549,115 @@ class ScreenFlowApp:
             text="🔧 系统高级参数配置中心 — 修改后直接写入配置文件并实时生效",
             font=("PingFang SC", 12, "bold"), fg="#ffffff", bg="#1e1e1e", anchor="w"
         )
-        title_lbl.pack(fill="x", padx=15, pady=10)
+        title_lbl.pack(fill="x", padx=15, pady=(10, 5))
         
-        # 允许滚动或自适应的 Frame
-        settings_frame = tk.Frame(self.tab_settings, bg="#1e1e1e")
-        settings_frame.pack(fill="both", expand=True, padx=15)
+        # 主框架容器
+        main_container = tk.Frame(self.tab_settings, bg="#1e1e1e")
+        main_container.pack(fill="both", expand=True, padx=15)
         
         lbl_cfg = {"font": ("PingFang SC", 10, "bold"), "fg": "#ffffff", "bg": "#1e1e1e", "anchor": "w"}
         ent_cfg = {"bg": "#151515", "fg": "#00ff00", "insertbackground": "white", "font": ("Menlo", 10), "bd": 1, "relief": "solid"}
         
-        settings_frame.columnconfigure(0, weight=1)
-        settings_frame.columnconfigure(1, weight=3)
+        # ==== Section 1: 🔑 AI 凭证与目标配置 ====
+        sec1 = tk.LabelFrame(
+            main_container, text=" 🔑 AI 凭证与目标配置 ",
+            font=("PingFang SC", 11, "bold"), fg="#ff9500", bg="#1e1e1e", bd=1
+        )
+        sec1.pack(fill="x", pady=5, ipady=5)
+        sec1.columnconfigure(0, weight=1)
+        sec1.columnconfigure(1, weight=3)
         
-        # 0. API Key
-        tk.Label(settings_frame, text="AI 模型 API Key (DashScope Bearer Token):", **lbl_cfg).grid(row=0, column=0, sticky="w", pady=5)
-        self.ent_api_key = tk.Entry(settings_frame, **ent_cfg)
-        self.ent_api_key.grid(row=0, column=1, sticky="ew", pady=5, padx=(10, 0))
+        # API Key
+        tk.Label(sec1, text="AI 模型 API Key (DashScope Bearer Token):", **lbl_cfg).grid(row=0, column=0, sticky="w", pady=4, padx=10)
+        self.ent_api_key = tk.Entry(sec1, **ent_cfg)
+        self.ent_api_key.grid(row=0, column=1, sticky="ew", pady=4, padx=(0, 10))
         self.ent_api_key.insert(0, str(self.config.get("api_key", "")))
         
-        # 1. Workspace ID
-        tk.Label(settings_frame, text="AI 工作空间 ID (DashScope Workspace ID, 可选):", **lbl_cfg).grid(row=1, column=0, sticky="w", pady=5)
-        self.ent_workspace_id = tk.Entry(settings_frame, **ent_cfg)
-        self.ent_workspace_id.grid(row=1, column=1, sticky="ew", pady=5, padx=(10, 0))
+        # Workspace ID
+        tk.Label(sec1, text="AI 工作空间 ID (DashScope Workspace ID, 可选):", **lbl_cfg).grid(row=1, column=0, sticky="w", pady=4, padx=10)
+        self.ent_workspace_id = tk.Entry(sec1, **ent_cfg)
+        self.ent_workspace_id.grid(row=1, column=1, sticky="ew", pady=4, padx=(0, 10))
         self.ent_workspace_id.insert(0, str(self.config.get("workspace_id", "")))
         
-        # 2. 基础间隔
-        tk.Label(settings_frame, text="基础检测间隔 (秒) - 聊天活跃时的轮询速度:", **lbl_cfg).grid(row=2, column=0, sticky="w", pady=5)
-        self.ent_base_int = tk.Entry(settings_frame, **ent_cfg)
-        self.ent_base_int.grid(row=2, column=1, sticky="ew", pady=5, padx=(10, 0))
+        # Target App Name
+        tk.Label(sec1, text="目标应用窗口标题/名称 (如 WeChat, Slack, 钉钉，留空不限制):", **lbl_cfg).grid(row=2, column=0, sticky="w", pady=4, padx=10)
+        self.ent_target_app = tk.Entry(sec1, **ent_cfg)
+        self.ent_target_app.grid(row=2, column=1, sticky="ew", pady=4, padx=(0, 10))
+        self.ent_target_app.insert(0, self.config.get("target_app_name", ""))
+        
+        # ==== Section 2: ⚙️ 监控与自适应轮询参数 ====
+        sec2 = tk.LabelFrame(
+            main_container, text=" ⚙️ 监控与自适应轮询参数 ",
+            font=("PingFang SC", 11, "bold"), fg="#00ff00", bg="#1e1e1e", bd=1
+        )
+        sec2.pack(fill="x", pady=5, ipady=5)
+        sec2.columnconfigure(0, weight=1)
+        sec2.columnconfigure(1, weight=3)
+        
+        # 基础检测间隔
+        tk.Label(sec2, text="基础检测间隔 (秒) - 聊天活跃时的轮询速度:", **lbl_cfg).grid(row=0, column=0, sticky="w", pady=4, padx=10)
+        self.ent_base_int = tk.Entry(sec2, **ent_cfg)
+        self.ent_base_int.grid(row=0, column=1, sticky="ew", pady=4, padx=(0, 10))
         self.ent_base_int.insert(0, str(self.config.get("base_interval", 5.0)))
         
-        # 3. 最大间隔
-        tk.Label(settings_frame, text="最大检测间隔 (秒) - 长期闲置时的最大频率:", **lbl_cfg).grid(row=3, column=0, sticky="w", pady=5)
-        self.ent_max_int = tk.Entry(settings_frame, **ent_cfg)
-        self.ent_max_int.grid(row=3, column=1, sticky="ew", pady=5, padx=(10, 0))
+        # 最大检测间隔
+        tk.Label(sec2, text="最大检测间隔 (秒) - 长期闲置时的最大频率:", **lbl_cfg).grid(row=1, column=0, sticky="w", pady=4, padx=10)
+        self.ent_max_int = tk.Entry(sec2, **ent_cfg)
+        self.ent_max_int.grid(row=1, column=1, sticky="ew", pady=4, padx=(0, 10))
         self.ent_max_int.insert(0, str(self.config.get("max_interval", 60.0)))
         
-        # 4. 退避倍率
-        tk.Label(settings_frame, text="闲置退避系数 - 没消息时每次延时累乘倍数:", **lbl_cfg).grid(row=4, column=0, sticky="w", pady=5)
-        self.ent_multiplier = tk.Entry(settings_frame, **ent_cfg)
-        self.ent_multiplier.grid(row=4, column=1, sticky="ew", pady=5, padx=(10, 0))
+        # 闲置退避系数
+        tk.Label(sec2, text="闲置退避系数 - 没消息时每次延时累乘倍数:", **lbl_cfg).grid(row=2, column=0, sticky="w", pady=4, padx=10)
+        self.ent_multiplier = tk.Entry(sec2, **ent_cfg)
+        self.ent_multiplier.grid(row=2, column=1, sticky="ew", pady=4, padx=(0, 10))
         self.ent_multiplier.insert(0, str(self.config.get("backoff_multiplier", 1.5)))
         
-        # 5. 变化阈值
-        tk.Label(settings_frame, text="通知标记检测敏感度 - 最小像素集范围点数:", **lbl_cfg).grid(row=5, column=0, sticky="w", pady=5)
-        self.ent_threshold = tk.Entry(settings_frame, **ent_cfg)
-        self.ent_threshold.grid(row=5, column=1, sticky="ew", pady=5, padx=(10, 0))
+        # 变化检测阈值
+        tk.Label(sec2, text="通知标记检测敏感度 - 最小像素集范围点数:", **lbl_cfg).grid(row=3, column=0, sticky="w", pady=4, padx=10)
+        self.ent_threshold = tk.Entry(sec2, **ent_cfg)
+        self.ent_threshold.grid(row=3, column=1, sticky="ew", pady=4, padx=(0, 10))
         self.ent_threshold.insert(0, str(self.config.get("change_threshold", 0.005)))
         
-        # 6. 回复过滤模式
-        tk.Label(settings_frame, text="智能接管过滤模式:", **lbl_cfg).grid(row=6, column=0, sticky="w", pady=8)
+        # ==== Section 3: 🛡️ 智能过滤与回复策略 ====
+        sec3 = tk.LabelFrame(
+            main_container, text=" 🛡️ 智能过滤与回复策略 ",
+            font=("PingFang SC", 11, "bold"), fg="#007aff", bg="#1e1e1e", bd=1
+        )
+        sec3.pack(fill="both", expand=True, pady=5, ipady=5)
+        sec3.columnconfigure(0, weight=1)
+        sec3.columnconfigure(1, weight=3)
+        sec3.rowconfigure(2, weight=1)
         
+        # 回复过滤模式
+        tk.Label(sec3, text="智能接管过滤模式:", **lbl_cfg).grid(row=0, column=0, sticky="w", pady=4, padx=10)
         self.filter_mode_var = tk.StringVar(value=self.config.get("filter_mode", "all"))
-        radio_frame = tk.Frame(settings_frame, bg="#1e1e1e")
-        radio_frame.grid(row=6, column=1, sticky="w", pady=8, padx=(10, 0))
-        
+        radio_frame = tk.Frame(sec3, bg="#1e1e1e")
+        radio_frame.grid(row=0, column=1, sticky="w", pady=4, padx=(0, 10))
         tk.Radiobutton(radio_frame, text="全部自动接管回复", variable=self.filter_mode_var, value="all", fg="#00ff00", bg="#1e1e1e", activeforeground="#00ff00", selectcolor="#2d2d2d").pack(side="left", padx=5)
         tk.Radiobutton(radio_frame, text="只回复名单中项目", variable=self.filter_mode_var, value="whitelist", fg="#007aff", bg="#1e1e1e", activeforeground="#007aff", selectcolor="#2d2d2d").pack(side="left", padx=5)
         tk.Radiobutton(radio_frame, text="排除名单中项目", variable=self.filter_mode_var, value="blacklist", fg="#ff3b30", bg="#1e1e1e", activeforeground="#ff3b30", selectcolor="#2d2d2d").pack(side="left", padx=5)
         
-        # 7. 名单框
-        tk.Label(settings_frame, text="过滤名单中的关键词 (空格或逗号分隔):", **lbl_cfg).grid(row=7, column=0, sticky="w", pady=5)
-        self.ent_filter_names = tk.Entry(settings_frame, **ent_cfg)
-        self.ent_filter_names.grid(row=7, column=1, sticky="ew", pady=5, padx=(10, 0))
+        # 过滤关键词
+        tk.Label(sec3, text="过滤名单中的关键词 (空格或逗号分隔):", **lbl_cfg).grid(row=1, column=0, sticky="w", pady=4, padx=10)
+        self.ent_filter_names = tk.Entry(sec3, **ent_cfg)
+        self.ent_filter_names.grid(row=1, column=1, sticky="ew", pady=4, padx=(0, 10))
         self.ent_filter_names.insert(0, self.config.get("filter_keywords", ""))
         
-        # 8. 目标应用名称
-        tk.Label(settings_frame, text="目标应用窗口标题/名称 (如 WeChat, Slack, 钉钉，留空不限制):", **lbl_cfg).grid(row=8, column=0, sticky="w", pady=5)
-        self.ent_target_app = tk.Entry(settings_frame, **ent_cfg)
-        self.ent_target_app.grid(row=8, column=1, sticky="ew", pady=5, padx=(10, 0))
-        self.ent_target_app.insert(0, self.config.get("target_app_name", ""))
-        
-        # 9. AI 系统 Prompt
-        tk.Label(settings_frame, text="AI 扮演角色与回复规则 Prompt:", **lbl_cfg).grid(row=9, column=0, sticky="nw", pady=(10, 5))
+        # AI 系统 Prompt
+        tk.Label(sec3, text="AI 扮演角色与回复规则 Prompt:", **lbl_cfg).grid(row=2, column=0, sticky="nw", pady=4, padx=10)
         self.txt_prompt = tk.Text(
-            settings_frame, bg="#151515", fg="#ffffff", insertbackground="white",
-            font=("PingFang SC", 10), bd=1, relief="solid", height=5
+            sec3, bg="#151515", fg="#ffffff", insertbackground="white",
+            font=("PingFang SC", 10), bd=1, relief="solid", height=3
         )
-        self.txt_prompt.grid(row=9, column=1, sticky="nsew", pady=(10, 5), padx=(10, 0))
+        self.txt_prompt.grid(row=2, column=1, sticky="nsew", pady=4, padx=(0, 10))
         self.txt_prompt.insert("1.0", self.config.get("system_prompt", ""))
-        
-        settings_frame.rowconfigure(9, weight=1)
         
         # 保存按钮
         self.btn_save_settings = tk.Label(
             self.tab_settings, font=("PingFang SC", 11, "bold"),
             fg="white", bd=0, height=2, cursor="hand2"
         )
-        self.btn_save_settings.pack(fill="x", padx=15, pady=15)
+        self.btn_save_settings.pack(fill="x", padx=15, pady=(5, 10))
         self.set_button_state(self.btn_save_settings, "💾 保存并应用参数配置", "#007aff", self.save_settings_action)
 
     def save_settings_action(self):
@@ -723,11 +688,6 @@ class ScreenFlowApp:
             self.config["target_app_name"] = target_app
             self.config["system_prompt"] = prompt
             
-            # 同时将 Tab 2 顶部的 Entry 和单选按钮同步
-            self.ent_names.delete(0, tk.END)
-            self.ent_names.insert(0, f_names)
-            self.tab_filter_mode_var.set(f_mode)
-            
             cfg_module.save_config(self.config)
             
             # 实时调整定时器
@@ -743,26 +703,6 @@ class ScreenFlowApp:
             
         except Exception as e:
             messagebox.showerror("配置错误", f"保存失败，请检查数据格式。原因: {e}", parent=self.root)
-
-    def sync_filter_mode_to_config(self):
-        """同步 Tab 2 过滤模式的选择到全局配置与 Tab 3"""
-        mode = self.tab_filter_mode_var.get()
-        self.config["filter_mode"] = mode
-        if hasattr(self, "filter_mode_var"):
-            self.filter_mode_var.set(mode)
-        cfg_module.save_config(self.config)
-        self.update_info_display()
-        logger.info(f"已更新回复接管模式为: {mode}")
-
-    def sync_filter_names_to_config(self, event=None):
-        """实时同步 Tab 2 输入的过滤名单到全局配置与 Tab 3"""
-        names = self.ent_names.get().strip()
-        self.config["filter_keywords"] = names
-        if hasattr(self, "ent_filter_names"):
-            self.ent_filter_names.delete(0, tk.END)
-            self.ent_filter_names.insert(0, names)
-        cfg_module.save_config(self.config)
-        self.update_info_display()
 
     # ==================== Tab 4: 人设与知识库 ====================
     
@@ -1005,7 +945,6 @@ class ScreenFlowApp:
         if messagebox.askyesno("清空确认", "确定清空黑白名单监控列表吗？"):
             self.config["filter_keywords"] = ""
             self.ent_filter_names.delete(0, tk.END)
-            self.ent_names.delete(0, tk.END)
             cfg_module.save_config(self.config)
             self.update_info_display()
             logger.info("已清空名单列表。")
@@ -1271,7 +1210,7 @@ class ScreenFlowApp:
             self.config["navigation_region"] = [list_col_x, list_col_y, list_col_w, list_col_h]
             
             # 获取用户输入的名字作为默认过滤名单
-            friend_names = self.ent_names.get().strip()
+            friend_names = self.ent_filter_names.get().strip()
             self.config["filter_keywords"] = friend_names
             
             # 同步填充 monitored_items 作为旧版数据结构的向下兼容
