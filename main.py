@@ -620,7 +620,7 @@ class ScreenFlowApp:
         self.ent_workspace_id.insert(0, str(self.config.get("workspace_id", "")))
         
         # Target App Name
-        tk.Label(sec1, text="目标应用窗口标题/名称 (如聊天软件窗口标题，留空不限制):", **lbl_cfg).grid(row=2, column=0, sticky="w", pady=4, padx=10)
+        tk.Label(sec1, text="目标应用名称/进程名 (如聊天软件应用名称，留空不限制):", **lbl_cfg).grid(row=2, column=0, sticky="w", pady=4, padx=10)
         self.ent_target_app = tk.Entry(sec1, **ent_cfg)
         self.ent_target_app.grid(row=2, column=1, sticky="ew", pady=4, padx=(0, 10))
         self.ent_target_app.insert(0, self.config.get("target_app_name", ""))
