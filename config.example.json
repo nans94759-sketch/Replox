@@ -1,0 +1,28 @@
+{
+    "api_key": "",
+    "workspace_id": "",
+    "base_url": "https://dashscope.aliyuncs.com",
+    "model": "qwen-plus",
+    "base_interval": 5.0,
+    "max_interval": 60.0,
+    "backoff_multiplier": 1.5,
+    "change_threshold": 0.005,
+    "reply_enabled": true,
+    "system_prompt": "你是一个智能消息回复助手。你需要阅读对方发送的消息，并以友好、自然、得体且简短的中文进行回复。\n要求：\n1. 回复要像一个真实的人在交流，口吻亲切、自然。\n2. 回复尽量简明扼要，控制在 1-2 句话以内。\n3. 不要使用多余的格式，直接输出你要回复的文本即可。",
+    "ocr_languages": [
+        "zh-Hans",
+        "en-US"
+    ],
+    "navigation_region": null,
+    "content_region": null,
+    "input_region": null,
+    "target_app_name": "",
+    "badge_color_r_min": 210,
+    "badge_color_g_max": 110,
+    "badge_color_b_max": 110,
+    "filter_mode": "all",
+    "filter_keywords": "",
+    "persona": "",
+    "knowledge_base": "",
+    "monitored_items": []
+}
