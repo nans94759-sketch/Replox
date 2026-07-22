@@ -17,7 +17,7 @@
     "content_region": null,
     "input_region": null,
     "target_app_name": "",
-    "badge_color_r_min": 210,
+    "badge_color_r_min": 190,
     "badge_color_g_max": 110,
     "badge_color_b_max": 110,
     "filter_mode": "all",

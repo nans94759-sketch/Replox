@@ -22,11 +22,12 @@ def get_retina_scale():
         _scale_factor = 1.0
     return _scale_factor
 
-def capture_region(region, save_debug=False, debug_name="capture"):
+def capture_region(region, save_debug=False, debug_name="capture", scale=None):
     """
     截取指定区域 [x, y, w, h] (坐标为 pyautogui 逻辑点坐标)
     """
-    scale = get_retina_scale()
+    if scale is None:
+        scale = get_retina_scale()
     x, y, w, h = region
     
     # 转换为 mss 物理像素坐标

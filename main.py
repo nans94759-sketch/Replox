@@ -6,6 +6,7 @@ import queue
 import argparse
 import sys
 import os
+import re
 
 import logger
 import config as cfg_module
@@ -15,6 +16,78 @@ import ocr_engine
 import auto_replier
 import chat_controller
 from adaptive_timer import AdaptiveTimer
+
+def get_resource_path(relative_path):
+    if getattr(sys, 'frozen', False):
+        base_path = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+    else:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_path, relative_path)
+
+def is_group_or_official_account(name):
+    if not name:
+        return False
+    name_lower = name.lower()
+    
+    # 公众号、订阅号、系统通知等关键词
+    official_keywords = ["订阅号", "服务号", "公众号", "wechat", "微信团队", "订阅号消息", "腾讯", "客服"]
+    if any(k in name_lower for k in official_keywords):
+        return True
+        
+    # 群聊特征：包含括号以及其中的人数，如：项目群(12)、家庭群（5）
+    if re.search(r"[\(（]\d+[\)）]", name_lower):
+        return True
+        
+    return False
+
+def is_muted_chat(item_img, scale=1.0):
+    """
+    通过分析列表项右下角区域，检测是否包含消息免打扰（静音铃铛）图标。
+    """
+    if item_img is None:
+        return False
+        
+    width, height = item_img.size
+    
+    # 静音铃铛图标在列表项右下角：
+    # X 范围：宽度 - 24 到 宽度 - 12 (逻辑像素)
+    # Y 范围：44 到 56 (逻辑像素)
+    scan_x_start = width - int(24 * scale)
+    scan_x_end = width - int(12 * scale)
+    scan_y_start = int(44 * scale)
+    scan_y_end = min(height, int(56 * scale))
+    
+    bg_x = width - int(32 * scale)
+    if bg_x < 0 or scan_x_start >= scan_x_end or scan_y_start >= scan_y_end:
+        return False
+        
+    rgb_img = item_img.convert("RGB")
+    
+    dark_pixels = 0
+    for y in range(scan_y_start, scan_y_end):
+        # 逐行获取背景色参考点，应对选中行/非选中行不同的底色
+        try:
+            bg_r, bg_g, bg_b = rgb_img.getpixel((bg_x, y))
+            bg_val = (bg_r + bg_g + bg_b) / 3
+        except IndexError:
+            continue
+            
+        for x in range(scan_x_start, scan_x_end):
+            try:
+                r, g, b = rgb_img.getpixel((x, y))
+                val = (r + g + b) / 3
+                # 如果该像素的亮度明显低于行背景色，则判定为静音铃铛的轮廓像素
+                if bg_val - val > 15:
+                    dark_pixels += 1
+            except IndexError:
+                continue
+                
+    # 判定门槛：Retina 比例折算，大于 15 个像素点则认为包含免打扰图标
+    min_dark_pixels = int(15 * (scale ** 2))
+    return dark_pixels >= min_dark_pixels
+
+
+
 
 class CountdownDialog(tk.Toplevel):
     def __init__(self, parent, seconds, mode_desc):
@@ -94,28 +167,15 @@ class ConfirmDialog(tk.Toplevel):
         self.result = False
         
         self.title("安全模式 - 发送确认")
-        self.overrideredirect(True)
         self.attributes("-topmost", True)
         self.configure(bg="#2d2d2d")
         
-        # 居中定位
-        width, height = 400, 360
-        parent.update_idletasks()
-        px = parent.winfo_x()
-        py = parent.winfo_y()
-        pw = parent.winfo_width()
-        ph = parent.winfo_height()
+        # 使其变为模态对话框，阻断对父窗口的操作
+        self.transient(parent)
+        self.grab_set()
         
-        if pw > 100 and ph > 100:
-            cx = px + (pw - width) // 2
-            cy = py + (ph - height) // 2
-        else:
-            screen_w = self.winfo_screenwidth()
-            screen_h = self.winfo_screenheight()
-            cx = (screen_w - width) // 2
-            cy = (screen_h - height) // 2
-            
-        self.geometry(f"{width}x{height}+{cx}+{cy}")
+        # 拦截原生窗口关闭事件
+        self.protocol("WM_DELETE_WINDOW", self.on_no)
         
         # 立体高亮发光边框
         border_frame = tk.Frame(self, bg="#2d2d2d", highlightbackground="#007aff", highlightthickness=2, bd=0)
@@ -180,6 +240,40 @@ class ConfirmDialog(tk.Toplevel):
         self.bind("<Return>", lambda e: self.on_yes())
         self.bind("<Escape>", lambda e: self.on_no())
         
+        # 动态计算和设置窗口高度，防止按钮溢出/不可见
+        self.update_idletasks()
+        width = 400
+        height = self.winfo_reqheight() + 10
+        
+        # 居中定位
+        parent.update_idletasks()
+        px = parent.winfo_x()
+        py = parent.winfo_y()
+        pw = parent.winfo_width()
+        ph = parent.winfo_height()
+        
+        if pw > 100 and ph > 100:
+            cx = px + (pw - width) // 2
+            cy = py + (ph - height) // 2
+        else:
+            screen_w = self.winfo_screenwidth()
+            screen_h = self.winfo_screenheight()
+            cx = (screen_w - width) // 2
+            cy = (screen_h - height) // 2
+            
+        self.geometry(f"{width}x{height}+{cx}+{cy}")
+        self.resizable(False, False)
+        
+        self.lift()
+        self.focus_force()
+        
+        # 将 Python 应用本身唤醒并激活至 macOS 最前台，确保置顶和焦点获取
+        try:
+            from AppKit import NSApplication
+            NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
+        except Exception as e:
+            logger.warn(f"无法激活应用至最前台: {e}")
+        
     def set_button_state(self, btn, text, bg, command):
         hover_colors = {
             "#27ae60": "#2ecc71",
@@ -208,29 +302,36 @@ def has_notification_badge(pil_img, config, scale=1.0):
         
     width, height = pil_img.size
     
-    # 通知标记通常位于列表项的右上角附近
-    # 限制只扫描前部区域 (逻辑像素 X: 0-70, Y: 0-50)
-    scan_w = min(width, int(70 * scale))
-    scan_h = min(height, int(50 * scale))
+    # 精确锁定红点可能出现的区域（通常在头像的右上角：X 40-58, Y 10-32 逻辑像素）
+    # 这样可以完全避开头像主体和右侧的消息文字，从物理结构上杜绝由于红色头像引发的误判
+    scan_x_start = int(40 * scale)
+    scan_x_end = min(width, int(58 * scale))
+    scan_y_start = int(10 * scale)
+    scan_y_end = min(height, int(32 * scale))
     
+    if scan_x_start >= scan_x_end or scan_y_start >= scan_y_end:
+        return False
+        
     rgb_img = pil_img.convert("RGB")
     
-    r_min = config.get("badge_color_r_min", 210)
+    # 降低默认 R 阈值到 190，以兼容列表项在被选中/变暗时，红点像素亮度下降的情况
+    r_min = config.get("badge_color_r_min", 190)
     g_max = config.get("badge_color_g_max", 110)
     b_max = config.get("badge_color_b_max", 110)
     
     matching_pixels = 0
-    for x in range(scan_w):
-        for y in range(scan_h):
+    for x in range(scan_x_start, scan_x_end):
+        for y in range(scan_y_start, scan_y_end):
             r, g, b = rgb_img.getpixel((x, y))
             # 通知标记的 RGB 色彩检测条件
             if r > r_min and g < g_max and b < b_max:
-                if (r - g) > 100 and (r - b) > 100:
+                if (r - g) > 90 and (r - b) > 90:
                     matching_pixels += 1
                     
-    # 判定门槛：Retina 屏下比例折算，大于 12 个像素点判定为存在标记
-    min_pixels = int(12 * (scale ** 2))
+    # 判定门槛：由于扫描区域显著缩小，要求至少 8 个像素点判定为存在标记
+    min_pixels = int(8 * (scale ** 2))
     return matching_pixels >= min_pixels
+
 
 class ScreenFlowApp:
     def __init__(self, root, args):
@@ -257,17 +358,18 @@ class ScreenFlowApp:
         # 加载并注册 App 精美图标
         self.app_icon_img = None
         self.app_icon_tk = None
-        if os.path.exists("app_icon.png"):
+        icon_path = get_resource_path("app_icon.png")
+        if os.path.exists(icon_path):
             try:
                 from PIL import Image, ImageTk
-                self.app_icon_img = Image.open("app_icon.png")
+                self.app_icon_img = Image.open(icon_path)
                 dialog_icon = self.app_icon_img.resize((70, 70), Image.Resampling.LANCZOS)
                 self.app_icon_tk = ImageTk.PhotoImage(dialog_icon)
                 
                 # macOS Dock 栏图标设置
                 try:
                     from AppKit import NSApplication, NSImage
-                    abs_path = os.path.abspath("app_icon.png")
+                    abs_path = os.path.abspath(icon_path)
                     ns_image = NSImage.alloc().initWithContentsOfFile_(abs_path)
                     NSApplication.sharedApplication().setApplicationIconImage_(ns_image)
                     logger.info("🎉 已成功设置 macOS Dock 栏程序图标！")
@@ -1414,6 +1516,10 @@ class ScreenFlowApp:
                 
                 visible_friends = []
                 for cand in true_names:
+                    # 全局过滤：直接排除明显是群聊或公众号的项
+                    if is_group_or_official_account(cand["text"]):
+                        continue
+                        
                     name_lower = cand["text"].lower()
                     should_handle = False
                     
@@ -1458,6 +1564,11 @@ class ScreenFlowApp:
                         
                     item_img = list_img.crop((0, crop_y_px, img_w, crop_y_px + crop_h_px))
                     
+                    # 检查是否开启了免打扰，若开启则直接跳过该会话（包括首次同步和未读触发）
+                    if is_muted_chat(item_img, scale):
+                        logger.debug(f"⏭️ 检测到「{name}」开启了消息免打扰，跳过。")
+                        continue
+                        
                     # 检查是否有未读标记
                     has_unread = has_notification_badge(item_img, self.config, scale)
                     is_first = self.first_check.get(name, True)
@@ -1477,8 +1588,16 @@ class ScreenFlowApp:
                             click_y = list_col[1] + ly_pt + 10
                             chat_controller.click_region([click_x - 15, click_y - 15, 30, 30])
                             time.sleep(0.5)
+                            # 点击后重新获取真正活跃的对话标题
+                            active_name = self.get_current_active_chat_name()
                         else:
                             logger.info(f"当前已处于「{name}」对话窗口，跳过重复的点击动作。")
+                            
+                        # 后置校验：如果进入的对话标题是群聊或公众号，立即跳过
+                        if active_name and is_group_or_official_account(active_name):
+                            logger.info(f"⏭️ 检测到「{active_name}」为群聊或公众号，跳过自动回复。")
+                            self.last_replied_sig[name] = "skipped_group_or_official"
+                            continue
                             
                         # 检查内容区域
                         content_img = screenshot_engine.capture_region(self.config["content_region"])

@@ -122,3 +122,14 @@ logs/
 
 # Temporary scratch folders
 scratch/
+
+# ChatGPT Auto Image Generation
+send_prompts.py
+prompts.txt
+
+# Release Builds & Packages
+*.dmg
+*.zip
+*.icns
+Replox_WeChat_Assistant.zip
+

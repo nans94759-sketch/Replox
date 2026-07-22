@@ -1,7 +1,16 @@
 import os
 import json
+import sys
 
-CONFIG_FILE = "config.json"
+def get_config_path():
+    if getattr(sys, 'frozen', False):
+        app_support = os.path.expanduser("~/Library/Application Support/Replox")
+        os.makedirs(app_support, exist_ok=True)
+        return os.path.join(app_support, "config.json")
+    return "config.json"
+
+CONFIG_FILE = get_config_path()
+
 
 DEFAULT_CONFIG = {
     # AI 大模型 API 配置
@@ -42,7 +51,7 @@ DEFAULT_CONFIG = {
     "target_app_name": "",
     
     # 通知标记颜色检测阈值 (RGB)
-    "badge_color_r_min": 210,
+    "badge_color_r_min": 190,
     "badge_color_g_max": 110,
     "badge_color_b_max": 110,
     
