@@ -293,42 +293,120 @@ class ConfirmDialog(tk.Toplevel):
         self.result = False
         self.destroy()
 
+def is_group_or_official_account(name):
+    if not name:
+        return False
+    name_lower = name.lower()
+    
+    # 支持 微信、飞书、Zalo、企业微信、钉钉 的公众号、系统通知与官方机器人关键词过滤
+    official_keywords = [
+        "订阅号", "服务号", "公众号", "wechat", "微信团队", "订阅号消息", "腾讯", "客服",
+        "飞书助手", "管理员小助手", "安全中心", "飞行社", "助手", "机器人", "官方",
+        "zalo", "my documents", "tin mới",
+        "新小通", "企业微信", "集团通知",
+        "openclaw", "工作通知", "安全助手", "钉钉", "ai助手"
+    ]
+    if any(k in name_lower for k in official_keywords):
+        return True
+        
+    # 群聊特征判断（兼容中英文与越南语等各种平台群聊格式）：
+    # 1. 包含括号人数，如：项目群(12)、家庭群（5）
+    if re.search(r"[\(（]\d+[\)）]", name_lower):
+        return True
+        
+    # 2. 包含人数后缀，如：21人、13 thành viên
+    if re.search(r"\b\d+\s*人\b|\b\d+\s*thành\s*viên\b", name_lower):
+        return True
+        
+    # 3. 包含群/Group/内部群/部门/交流群/沟通群/总群等关键词
+    group_keywords = ["群", "group", "内部群", "部门", "交流群", "沟通群", "总群", "团队"]
+    if any(gk in name_lower for gk in group_keywords):
+        return True
+        
+    return False
+
+def is_muted_chat(item_img, scale=1.0):
+    """
+    通过分析列表项右下角区域，检测是否包含消息免打扰（静音铃铛）图标。
+    """
+    if item_img is None:
+        return False
+        
+    width, height = item_img.size
+    
+    # 静音铃铛图标在列表项右下角：
+    # X 范围：宽度 - 24 到 宽度 - 12 (逻辑像素)
+    # Y 范围：44 到 56 (逻辑像素)
+    scan_x_start = width - int(24 * scale)
+    scan_x_end = width - int(12 * scale)
+    scan_y_start = int(44 * scale)
+    scan_y_end = min(height, int(56 * scale))
+    
+    bg_x = width - int(32 * scale)
+    if bg_x < 0 or scan_x_start >= scan_x_end or scan_y_start >= scan_y_end:
+        return False
+        
+    rgb_img = item_img.convert("RGB")
+    
+    dark_pixels = 0
+    for y in range(scan_y_start, scan_y_end):
+        # 逐行获取背景色参考点，应对选中行/非选中行不同的底色
+        try:
+            bg_r, bg_g, bg_b = rgb_img.getpixel((bg_x, y))
+            bg_val = (bg_r + bg_g + bg_b) / 3
+        except IndexError:
+            continue
+            
+        for x in range(scan_x_start, scan_x_end):
+            try:
+                r, g, b = rgb_img.getpixel((x, y))
+                val = (r + g + b) / 3
+                # 如果该像素的亮度明显低于行背景色，则判定为静音铃铛的轮廓像素
+                if bg_val - val > 15:
+                    dark_pixels += 1
+            except IndexError:
+                continue
+                
+    # 判定门槛：Retina 比例折算，大于 15 个像素点则认为包含免打扰图标
+    min_dark_pixels = int(15 * (scale ** 2))
+    return dark_pixels >= min_dark_pixels
+
+
 def has_notification_badge(pil_img, config, scale=1.0):
     """
     分析列表项截图，检测是否包含未读通知标记（徽章）。
+    兼容 微信、飞书、Zalo、企业微信、钉钉 的红点与未读数字徽章布局。
     """
     if pil_img is None:
         return False
         
     width, height = pil_img.size
-    
-    # 精确锁定红点可能出现的区域（通常在头像的右上角：X 40-58, Y 10-32 逻辑像素）
-    # 这样可以完全避开头像主体和右侧的消息文字，从物理结构上杜绝由于红色头像引发的误判
-    scan_x_start = int(40 * scale)
-    scan_x_end = min(width, int(58 * scale))
-    scan_y_start = int(10 * scale)
-    scan_y_end = min(height, int(32 * scale))
-    
-    if scan_x_start >= scan_x_end or scan_y_start >= scan_y_end:
-        return False
-        
     rgb_img = pil_img.convert("RGB")
     
-    # 降低默认 R 阈值到 190，以兼容列表项在被选中/变暗时，红点像素亮度下降的情况
+    # 扫描区域定义（同时兼顾头像右上角与列表项最右侧红点区域）：
+    # 1. 头像右上角：X [35..60], Y [5..35]
+    # 2. 列表最右侧：X [width - 55 .. width - 5], Y [5..50]
+    regions_to_scan = [
+        (int(35 * scale), min(width, int(60 * scale)), int(5 * scale), min(height, int(35 * scale))),
+        (max(0, width - int(55 * scale)), max(0, width - int(5 * scale)), int(5 * scale), min(height, int(50 * scale)))
+    ]
+    
     r_min = config.get("badge_color_r_min", 190)
     g_max = config.get("badge_color_g_max", 110)
     b_max = config.get("badge_color_b_max", 110)
     
     matching_pixels = 0
-    for x in range(scan_x_start, scan_x_end):
-        for y in range(scan_y_start, scan_y_end):
-            r, g, b = rgb_img.getpixel((x, y))
-            # 通知标记的 RGB 色彩检测条件
-            if r > r_min and g < g_max and b < b_max:
-                if (r - g) > 90 and (r - b) > 90:
-                    matching_pixels += 1
-                    
-    # 判定门槛：由于扫描区域显著缩小，要求至少 8 个像素点判定为存在标记
+    for x_start, x_end, y_start, y_end in regions_to_scan:
+        if x_start >= x_end or y_start >= y_end:
+            continue
+        for x in range(x_start, x_end):
+            for y in range(y_start, y_end):
+                r, g, b = rgb_img.getpixel((x, y))
+                # 红色/橙红通知标记 RGB 检测
+                if r > r_min and g < g_max and b < b_max:
+                    if (r - g) > 80 and (r - b) > 80:
+                        matching_pixels += 1
+                        
     min_pixels = int(8 * (scale ** 2))
     return matching_pixels >= min_pixels
 
