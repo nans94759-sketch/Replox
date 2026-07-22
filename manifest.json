@@ -1,11 +1,11 @@
 {
-  "binary_path": "/Users/xukangbo/Documents/antigravity/splendid-davinci/bin/cua-driver",
+  "binary_path": "bin/cua-driver",
   "binary_version": "0.7.1",
   "mcp_invocation": {
     "args": [
       "mcp"
     ],
-    "command": "/Users/xukangbo/Documents/antigravity/splendid-davinci/bin/cua-driver"
+    "command": "bin/cua-driver"
   },
   "schema_version": "1",
   "subcommands": [
